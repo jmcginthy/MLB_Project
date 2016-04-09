@@ -48,6 +48,9 @@ def parse_stats(Top):
             tds = tr.find_all('td')  # finds all tds in each row
             timediv = tr.find_all("div", { "class" : "time" })
 
+            if tds.text == 'profile-overview':
+                Team = ""
+
 
             if len(timediv) != 0:
                 match = days.search(timediv[0].text)
@@ -63,13 +66,6 @@ def parse_stats(Top):
                 if "(Car.)" in tds[0].find(text=True):  # Finds if hitter has faced expected pitcher
                     vsAvg = float(tds[9].find(text=True))
                     ABs = int(tds[1].find(text=True))
-                # if "This Game" in tds[0].find(text=True):
-                #     if int(tds[3].find(text=True)) == 0 and int(tds[1].find(text=True)) != 0:
-                #         Hit = 0
-                #     elif int(tds[3].find(text=True)) == 0 and int(tds[1].find(text=True)) == 0:
-                #         omit = True
-                #     else:
-                #         Hit = int(tds[3].find(text=True))
 
             if (len(tds)) == 17:  # first row with length 17 hold current season stats
                 if "2016 Regular Season" in tds[0].find(text=True):
