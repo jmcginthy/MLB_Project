@@ -38,6 +38,8 @@ def parse_stats(Top):
         LSDAvg = -1
         vsAvg = -1
         ABs = 0
+        walks = 0
+        CareerAvg = -1
         Hit = ""
 
         soup = get_http((Top[i]))
