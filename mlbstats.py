@@ -11,11 +11,12 @@ import re
 
 
 def main():
+    past_stats = read_in_past_stats()
     top = statsscraper()
-    stats = parse_stats(top)
-    player_stats = calc_odds(stats)
-    write_out_csv(player_stats)
-    #read_in_stats()
+    stats = parse_stats(top,past_stats)
+    #player_stats = calc_odds(stats)
+    write_out_csv(stats)
+
 
 def get_http(url):
     r = requests.get(url)
@@ -23,7 +24,7 @@ def get_http(url):
     return BeautifulSoup(data)
 
 
-def parse_stats(Top):
+def parse_stats(Top, past_stats):
     Stats = []
     days = re.compile("Sun|Mon|Tue|Wed|Thu|Fri|Sat")
     today = datetime.datetime.now()
@@ -33,6 +34,8 @@ def parse_stats(Top):
 
     for i in range(len(Top)):
     # for i in range(len(Top)):
+        Name = (Top[i]).split('/')[-1]
+
         omit = False
         SeasonAvg = 0
         LSDAvg = 0
@@ -44,13 +47,11 @@ def parse_stats(Top):
 
         soup = get_http((Top[i]))
 
+        Team = soup.find('h6').text
+
         for tr in soup.find_all('tr'):  # finds all rows
             tds = tr.find_all('td')  # finds all tds in each row
             timediv = tr.find_all("div", { "class" : "time" })
-
-            if tds.text == 'profile-overview':
-                Team = ""
-
 
             if len(timediv) != 0:
                 match = days.search(timediv[0].text)
@@ -75,13 +76,13 @@ def parse_stats(Top):
                     CareerAvg = float(tds[-4].find(text=True))
 
             if (len(tds)) == 14 and tr.text[0:4] != 'DATE':
-                Date = str(tds[0].text)
+                #Date = str(tds[0].text)
                 Hit = int(tds[5].text)
                 break
 
 
         if not omit:
-            Stats.append([(Top[i]).split('/')[-1], SeasonAvg, LSDAvg, vsAvg, ABs, Hit, walks, CareerAvg])  # appends player and stats to list
+            Stats.append([Name, Team, CareerAvg, SeasonAvg, LSDAvg, vsAvg, ABs, walks])  # appends player and stats to list
 
     return Stats
 
@@ -89,9 +90,9 @@ def calc_odds(Stats):
     Player_Odds = []
     weightedTotal = 0
 
-    max_avg = max(max([p[1]]) for p in Stats)
-    max_lsd = max(max([p[2]]) for p in Stats)
-    max_cmu = max(max([p[3]]) for p in Stats if p[4] >= 5)
+    max_avg = max(max([p[2]]) for p in Stats)
+    max_lsd = max(max([p[3]]) for p in Stats)
+    max_cmu = max(max([p[4]]) for p in Stats if p[5] >= 5)
     max_walk = max(max([p[6]]) for p in Stats)
     max_career = max(max([p[7]]) for p in Stats)
     #max_vs_right_left
@@ -136,26 +137,34 @@ def calc_odds(Stats):
     return (sorted(Player_Odds, key=itemgetter(1), reverse=True ))
 
 
-def write_out_csv(Player_Odds):
+def write_out_csv(stats):
     #Print stats to CSV file
-    timestamp = datetime.datetime.now()
-    filename = "stats_" + timestamp.strftime("%Y-%m-%d_%H%M") + ".csv"
+    #timestamp = datetime.datetime.now()
+    if len(stats[0]) == 8:
+        filename = "current_stats.csv"
+    else:
+        filename = "past_stats.csv"
 
     with open(filename, "wt") as f:
-        writer = csv.DictWriter(f, lineterminator='\n',
-                                fieldnames = ["Name", "Weighted Average", "Hit or Not", "", "Career Avg",
+        if filename is "current_stats.csv":
+            writer = csv.DictWriter(f, lineterminator='\n',
+                                fieldnames = ["Name", "Team", "Career Avg",
                                               "Season Avg", "LSD Avg", "CMU Avg", "MU ABs", "Walks"])
+        else:
+            writer = csv.DictWriter(f, lineterminator='\n',
+                                fieldnames = ["Name", "Team", "Career Avg",
+                                              "Season Avg", "LSD Avg", "CMU Avg", "MU ABs", "Walks", "Hits"])
         writer.writeheader()
         writer = csv.writer(f, lineterminator='\n')
-        writer.writerows(Player_Odds)
+        writer.writerows(stats)
 
-def read_in_stats():
-    with open('statsoutput.csv', 'rt') as f:
+def read_in_past_stats():
+    with open('past_stats.csv', 'rt') as f:
         reader = csv.reader(f)
-        stats = list(reader)
+        past_stats = list(reader)
 
-    print(stats)
-    #return stats
+    #print(past_stats)
+    return past_stats
 
 
 def statsscraper():
