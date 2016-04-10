@@ -34,6 +34,8 @@ def parse_stats(Top, past_stats):
     today = today.strftime("%a")
     yesterday = yesterday.strftime("%a")
 
+    names = [item[0] for item in past_stats]
+
     for i in range(len(Top)):
     # for i in range(len(Top)):
         Name = (Top[i]).split('/')[-1]
@@ -79,13 +81,15 @@ def parse_stats(Top, past_stats):
                     CareerAvg = float(tds[-4].find(text=True))
 
             if (len(tds)) == 14 and tr.text[0:4] != 'DATE':
-                #Date = str(tds[0].text)
-                names = [item[0] for item in past_stats]
-                try:
-                    idx = names.index(Name)
-                    Hit = int(tds[5].text)
-                except ValueError:
-                    past_omit = True
+                Date = (str(tds[0].text)).split('/')
+                day_diff = datetime.date.today()-datetime.date(2016,int(Date[0]),int(Date[1]))
+                if day_diff == 1:
+
+                    try:
+                        idx = names.index(Name)
+                        Hit = int(tds[5].text)
+                    except ValueError:
+                        past_omit = True
 
                 break
 
