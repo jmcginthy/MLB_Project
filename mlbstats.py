@@ -13,9 +13,10 @@ import re
 def main():
     past_stats = read_in_past_stats()
     top = statsscraper()
-    stats = parse_stats(top,past_stats)
+    stats, past_stats = parse_stats(top,past_stats)
     #player_stats = calc_odds(stats)
     write_out_csv(stats)
+    write_out_csv(past_stats)
 
 
 def get_http(url):
@@ -26,6 +27,7 @@ def get_http(url):
 
 def parse_stats(Top, past_stats):
     Stats = []
+    TrainingSet = []
     days = re.compile("Sun|Mon|Tue|Wed|Thu|Fri|Sat")
     today = datetime.datetime.now()
     yesterday = today - datetime.timedelta(1)
@@ -35,8 +37,9 @@ def parse_stats(Top, past_stats):
     for i in range(len(Top)):
     # for i in range(len(Top)):
         Name = (Top[i]).split('/')[-1]
-
+        idx = 0
         omit = False
+        past_omit = False
         SeasonAvg = 0
         LSDAvg = 0
         vsAvg = 0
@@ -77,14 +80,22 @@ def parse_stats(Top, past_stats):
 
             if (len(tds)) == 14 and tr.text[0:4] != 'DATE':
                 #Date = str(tds[0].text)
-                Hit = int(tds[5].text)
-                break
+                names = [item[0] for item in past_stats]
+                try:
+                    idx = names.index(Name)
+                    Hit = int(tds[5].text)
+                except ValueError:
+                    past_omit = True
 
+                break
 
         if not omit:
             Stats.append([Name, Team, CareerAvg, SeasonAvg, LSDAvg, vsAvg, ABs, walks])  # appends player and stats to list
 
-    return Stats
+        if not past_omit:
+            past_stats[idx].append(Hit)
+
+    return Stats, past_stats
 
 def calc_odds(Stats):
     Player_Odds = []
@@ -160,6 +171,7 @@ def write_out_csv(stats):
 
 def read_in_past_stats():
     with open('past_stats.csv', 'rt') as f:
+        next(f)
         reader = csv.reader(f)
         past_stats = list(reader)
 
